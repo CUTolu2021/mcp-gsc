@@ -61,7 +61,20 @@ if _raw_data_state not in ("all", "final"):
     )
 DATA_STATE = _raw_data_state
 
+# Default property to use when site_url is omitted in tool calls.
+DEFAULT_SITE_URL = os.environ.get("GSC_DEFAULT_SITE_URL", "").strip() or None
+
+SITE_URL_REQUIRED_MESSAGE = (
+    "Error: site_url is required. Pass site_url or set GSC_DEFAULT_SITE_URL in the environment. "
+    "Use list_properties to see available properties."
+)
+
 SCOPES = ["https://www.googleapis.com/auth/webmasters"]
+
+def resolve_site_url(site_url: Optional[str]) -> Optional[str]:
+    if site_url and site_url.strip():
+        return site_url.strip()
+    return DEFAULT_SITE_URL
 
 def get_gsc_service():
     """
@@ -159,7 +172,7 @@ def get_gsc_service_oauth():
     return build("searchconsole", "v1", credentials=creds, cache_discovery=False)
 
 
-def _site_not_found_error(site_url: str) -> str:
+def _site_not_found_error(site_url: Optional[str] = None) -> str:
     """Return a helpful message when a GSC property returns 404."""
     lines = [f"Property '{site_url}' not found (404). Possible causes:\n"]
     lines.append(
@@ -225,13 +238,16 @@ async def list_properties() -> str:
         return f"Error retrieving properties: {str(e)}"
 
 @mcp.tool()
-async def add_site(site_url: str) -> str:
+async def add_site(site_url: Optional[str] = None) -> str:
     """
     Add a site to your Search Console properties.
     
     Args:
         site_url: The URL of the site to add (must be exact match e.g. https://example.com, or https://www.example.com, or https://subdomain.example.com/path/, for domain properties use format: sc-domain:example.com)
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     if not ALLOW_DESTRUCTIVE:
         return (
             "Safety: add_site is a destructive operation that modifies your GSC account. "
@@ -286,13 +302,16 @@ async def add_site(site_url: str) -> str:
         return f"Error adding site: {str(e)}"
 
 @mcp.tool()
-async def delete_site(site_url: str) -> str:
+async def delete_site(site_url: Optional[str] = None) -> str:
     """
     Remove a site from your Search Console properties.
     
     Args:
         site_url: The URL of the site to remove (must be exact match e.g. https://example.com, or https://www.example.com, or https://subdomain.example.com/path/, for domain properties use format: sc-domain:example.com)
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     if not ALLOW_DESTRUCTIVE:
         return (
             "Safety: delete_site permanently removes a property from your GSC account. "
@@ -340,7 +359,7 @@ async def delete_site(site_url: str) -> str:
         return f"Error removing site: {str(e)}"
 
 @mcp.tool()
-async def get_search_analytics(site_url: str, days: int = 28, dimensions: str = "query", row_limit: int = 20) -> str:
+async def get_search_analytics(site_url: Optional[str] = None, days: int = 28, dimensions: str = "query", row_limit: int = 20) -> str:
     """
     Get search analytics data for a specific property.
     
@@ -355,6 +374,9 @@ async def get_search_analytics(site_url: str, days: int = 28, dimensions: str = 
                    50-200 for deeper analysis, up to 500 for comprehensive reports. For bulk exports
                    beyond 500 rows, use get_advanced_search_analytics which supports pagination.
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -414,7 +436,7 @@ async def get_search_analytics(site_url: str, days: int = 28, dimensions: str = 
         return f"Error retrieving search analytics: {str(e)}"
 
 @mcp.tool()
-async def get_site_details(site_url: str) -> str:
+async def get_site_details(site_url: Optional[str] = None) -> str:
     """
     Get detailed information about a specific Search Console property.
     
@@ -423,6 +445,9 @@ async def get_site_details(site_url: str) -> str:
                   "sc-domain:example.com"). Domain properties cover all subdomains — use the
                   domain property as site_url and filter by page to analyze a specific subdomain.
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -461,7 +486,7 @@ async def get_site_details(site_url: str) -> str:
         return f"Error retrieving site details: {str(e)}"
 
 @mcp.tool()
-async def get_sitemaps(site_url: str) -> str:
+async def get_sitemaps(site_url: Optional[str] = None) -> str:
     """
     List all sitemaps for a specific Search Console property.
     
@@ -470,6 +495,9 @@ async def get_sitemaps(site_url: str) -> str:
                   "sc-domain:example.com"). Domain properties cover all subdomains — use the
                   domain property as site_url and filter by page to analyze a specific subdomain.
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -528,7 +556,7 @@ async def get_sitemaps(site_url: str) -> str:
         return f"Error retrieving sitemaps: {str(e)}"
 
 @mcp.tool()
-async def inspect_url_enhanced(site_url: str, page_url: str) -> str:
+async def inspect_url_enhanced(site_url: Optional[str] = None, page_url: str) -> str:
     """
     Enhanced URL inspection to check indexing status and rich results in Google.
     
@@ -538,6 +566,9 @@ async def inspect_url_enhanced(site_url: str, page_url: str) -> str:
                   domain property as site_url and filter by page to analyze a specific subdomain.
         page_url: The specific URL to inspect
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -650,7 +681,7 @@ async def inspect_url_enhanced(site_url: str, page_url: str) -> str:
         return f"Error inspecting URL: {str(e)}"
 
 @mcp.tool()
-async def batch_url_inspection(site_url: str, urls: str) -> str:
+async def batch_url_inspection(site_url: Optional[str] = None, urls: str) -> str:
     """
     Inspect multiple URLs in batch (within API limits).
     
@@ -660,6 +691,9 @@ async def batch_url_inspection(site_url: str, urls: str) -> str:
                   domain property as site_url and filter by page to analyze a specific subdomain.
         urls: List of URLs to inspect, one per line
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -726,7 +760,7 @@ async def batch_url_inspection(site_url: str, urls: str) -> str:
         return f"Error performing batch inspection: {str(e)}"
 
 @mcp.tool()
-async def check_indexing_issues(site_url: str, urls: str) -> str:
+async def check_indexing_issues(site_url: Optional[str] = None, urls: str) -> str:
     """
     Check for specific indexing issues across multiple URLs.
     
@@ -736,6 +770,9 @@ async def check_indexing_issues(site_url: str, urls: str) -> str:
                   domain property as site_url and filter by page to analyze a specific subdomain.
         urls: List of URLs to check, one per line
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -847,7 +884,7 @@ async def check_indexing_issues(site_url: str, urls: str) -> str:
         return f"Error checking indexing issues: {str(e)}"
 
 @mcp.tool()
-async def get_performance_overview(site_url: str, days: int = 28) -> str:
+async def get_performance_overview(site_url: Optional[str] = None, days: int = 28) -> str:
     """
     Get a performance overview for a specific property.
     
@@ -857,6 +894,9 @@ async def get_performance_overview(site_url: str, days: int = 28) -> str:
                   domain property as site_url and filter by page to analyze a specific subdomain.
         days: Number of days to look back (default: 28)
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -934,7 +974,7 @@ async def get_performance_overview(site_url: str, days: int = 28) -> str:
 
 @mcp.tool()
 async def get_advanced_search_analytics(
-    site_url: str, 
+    site_url: Optional[str] = None, 
     start_date: str = None, 
     end_date: str = None, 
     dimensions: str = "query", 
@@ -975,6 +1015,9 @@ async def get_advanced_search_analytics(
                            {"dimension":"device","operator":"equals","expression":"MOBILE"}]
         data_state: Data freshness — "all" (default, matches GSC dashboard) or "final" (confirmed data only, 2-3 day lag)
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -1115,7 +1158,7 @@ async def get_advanced_search_analytics(
 
 @mcp.tool()
 async def compare_search_periods(
-    site_url: str,
+    site_url: Optional[str] = None,
     period1_start: str,
     period1_end: str,
     period2_start: str,
@@ -1137,6 +1180,9 @@ async def compare_search_periods(
         dimensions: Dimensions to group by (default: query)
         limit: Number of top results to compare (default: 10)
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -1252,7 +1298,7 @@ async def compare_search_periods(
 
 @mcp.tool()
 async def get_search_by_page_query(
-    site_url: str,
+    site_url: Optional[str] = None,
     page_url: str,
     days: int = 28,
     row_limit: int = 20
@@ -1270,6 +1316,9 @@ async def get_search_by_page_query(
                    50-200 for deeper analysis, up to 500 for comprehensive reports. For bulk exports
                    beyond 500 rows, use get_advanced_search_analytics which supports pagination.
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -1331,7 +1380,7 @@ async def get_search_by_page_query(
         return f"Error retrieving page query data: {str(e)}"
 
 @mcp.tool()
-async def list_sitemaps_enhanced(site_url: str, sitemap_index: str = None) -> str:
+async def list_sitemaps_enhanced(site_url: Optional[str] = None, sitemap_index: str = None) -> str:
     """
     List all sitemaps for a specific Search Console property with detailed information.
     
@@ -1341,6 +1390,9 @@ async def list_sitemaps_enhanced(site_url: str, sitemap_index: str = None) -> st
                   domain property as site_url and filter by page to analyze a specific subdomain.
         sitemap_index: Optional sitemap index URL to list child sitemaps
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -1413,7 +1465,7 @@ async def list_sitemaps_enhanced(site_url: str, sitemap_index: str = None) -> st
         return f"Error retrieving sitemaps: {str(e)}"
 
 @mcp.tool()
-async def get_sitemap_details(site_url: str, sitemap_url: str) -> str:
+async def get_sitemap_details(site_url: Optional[str] = None, sitemap_url: str) -> str:
     """
     Get detailed information about a specific sitemap.
     
@@ -1423,6 +1475,9 @@ async def get_sitemap_details(site_url: str, sitemap_url: str) -> str:
                   domain property as site_url and filter by page to analyze a specific subdomain.
         sitemap_url: The full URL of the sitemap to inspect
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -1483,7 +1538,7 @@ async def get_sitemap_details(site_url: str, sitemap_url: str) -> str:
         return f"Error retrieving sitemap details: {str(e)}"
 
 @mcp.tool()
-async def submit_sitemap(site_url: str, sitemap_url: str) -> str:
+async def submit_sitemap(site_url: Optional[str] = None, sitemap_url: str) -> str:
     """
     Submit a new sitemap or resubmit an existing one to Google.
     
@@ -1493,6 +1548,9 @@ async def submit_sitemap(site_url: str, sitemap_url: str) -> str:
                   domain property as site_url and filter by page to analyze a specific subdomain.
         sitemap_url: The full URL of the sitemap to submit
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         service = get_gsc_service()
         
@@ -1530,7 +1588,7 @@ async def submit_sitemap(site_url: str, sitemap_url: str) -> str:
         return f"Error submitting sitemap: {str(e)}"
 
 @mcp.tool()
-async def delete_sitemap(site_url: str, sitemap_url: str) -> str:
+async def delete_sitemap(site_url: Optional[str] = None, sitemap_url: str) -> str:
     """
     Delete (unsubmit) a sitemap from Google Search Console.
     
@@ -1540,6 +1598,9 @@ async def delete_sitemap(site_url: str, sitemap_url: str) -> str:
                   domain property as site_url and filter by page to analyze a specific subdomain.
         sitemap_url: The full URL of the sitemap to delete
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     if not ALLOW_DESTRUCTIVE:
         return (
             "Safety: delete_sitemap permanently removes a sitemap from GSC. "
@@ -1566,7 +1627,7 @@ async def delete_sitemap(site_url: str, sitemap_url: str) -> str:
         return f"Error deleting sitemap: {str(e)}"
 
 @mcp.tool()
-async def manage_sitemaps(site_url: str, action: str, sitemap_url: str = None, sitemap_index: str = None) -> str:
+async def manage_sitemaps(site_url: Optional[str] = None, action: str, sitemap_url: str = None, sitemap_index: str = None) -> str:
     """
     All-in-one tool to manage sitemaps (list, get details, submit, delete).
     
@@ -1578,6 +1639,9 @@ async def manage_sitemaps(site_url: str, action: str, sitemap_url: str = None, s
         sitemap_url: The full URL of the sitemap (required for details, submit, delete)
         sitemap_index: Optional sitemap index URL for listing child sitemaps (only used with 'list' action)
     """
+    site_url = resolve_site_url(site_url)
+    if not site_url:
+        return SITE_URL_REQUIRED_MESSAGE
     try:
         # Validate inputs
         action = action.lower().strip()

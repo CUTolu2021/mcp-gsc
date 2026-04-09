@@ -283,6 +283,7 @@ The configuration below uses Claude Desktop as an example. For other clients (Cu
 | `GSC_CREDENTIALS_PATH` | Service account only | `service_account_credentials.json` (same folder) | Path to your service account JSON key file |
 | `GSC_SKIP_OAUTH` | No | `false` | Set to `"true"` to force service account auth and skip OAuth |
 | `GSC_DATA_STATE` | No | `"all"` | `"all"` returns fresh data matching the GSC dashboard. `"final"` returns only confirmed data (2–3 day lag). |
+| `GSC_DEFAULT_SITE_URL` | No | (none) | Default property to use when a tool call omits `site_url` (e.g., `sc-domain:example.com`). |
 
    **Important:** Replace all paths with the actual locations on your computer:
    
