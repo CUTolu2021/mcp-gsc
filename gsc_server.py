@@ -1753,29 +1753,25 @@ async def reauthenticate() -> str:
 def main():
     """Entry point for the MCP server. Supports stdio (default) and SSE transports."""
     transport = os.environ.get("MCP_TRANSPORT", "stdio").lower()
-    host = os.environ.get("MCP_HOST", "127.0.0.1")
+    host = os.environ.get("MCP_HOST", "0.0.0.0")
     try:
-        port = int(os.environ.get("MCP_PORT", "3001"))
+        port = int(os.environ.get("MCP_PORT", "8080"))
     except ValueError:
         raise ValueError("MCP_PORT must be an integer")
 
     if transport == "stdio":
         mcp.run(transport="stdio")
     elif transport in {"sse", "http"}:
-        # FastMCP.run signature varies by version; call with supported args only.
+        # FastMCP.run behavior differs across mcp versions. Try the explicit
+        # host/port call first so deployed containers do not silently fall back
+        # to the library default of 127.0.0.1:8000.
         try:
-            from inspect import signature
-
-            params = signature(mcp.run).parameters
-            if "host" in params and "port" in params:
-                mcp.run(transport="sse", host=host, port=port)
-            elif "port" in params:
+            mcp.run(transport="sse", host=host, port=port)
+        except TypeError:
+            try:
                 mcp.run(transport="sse", port=port)
-            else:
+            except TypeError:
                 mcp.run(transport="sse")
-        except Exception:
-            # Fallback to safest call if signature introspection fails.
-            mcp.run(transport="sse")
     else:
         raise ValueError(
             f"Unknown MCP_TRANSPORT '{transport}'. "
