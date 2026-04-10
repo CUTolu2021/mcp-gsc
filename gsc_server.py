@@ -1762,7 +1762,20 @@ def main():
     if transport == "stdio":
         mcp.run(transport="stdio")
     elif transport in {"sse", "http"}:
-        mcp.run(transport="sse", host=host, port=port)
+        # FastMCP.run signature varies by version; call with supported args only.
+        try:
+            from inspect import signature
+
+            params = signature(mcp.run).parameters
+            if "host" in params and "port" in params:
+                mcp.run(transport="sse", host=host, port=port)
+            elif "port" in params:
+                mcp.run(transport="sse", port=port)
+            else:
+                mcp.run(transport="sse")
+        except Exception:
+            # Fallback to safest call if signature introspection fails.
+            mcp.run(transport="sse")
     else:
         raise ValueError(
             f"Unknown MCP_TRANSPORT '{transport}'. "
