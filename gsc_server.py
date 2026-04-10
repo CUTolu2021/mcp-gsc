@@ -21,7 +21,34 @@ logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
 # MCP
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("gsc-server")
+
+def _build_mcp_server() -> FastMCP:
+    host = os.environ.get("MCP_HOST", "0.0.0.0")
+    try:
+        port = int(os.environ.get("MCP_PORT", "8080"))
+    except ValueError as exc:
+        raise ValueError("MCP_PORT must be an integer") from exc
+
+    kwargs = {}
+
+    # Older/newer FastMCP versions differ in whether host/port belong on the
+    # constructor or only on run(). Prefer constructor settings when supported
+    # so the server does not silently fall back to 127.0.0.1:8000.
+    try:
+        from inspect import signature
+
+        params = signature(FastMCP).parameters
+        if "host" in params:
+            kwargs["host"] = host
+        if "port" in params:
+            kwargs["port"] = port
+    except Exception:
+        pass
+
+    return FastMCP("gsc-server", **kwargs)
+
+
+mcp = _build_mcp_server()
 
 # Path to your service account JSON or user credentials JSON
 # First check if GSC_CREDENTIALS_PATH environment variable is set
