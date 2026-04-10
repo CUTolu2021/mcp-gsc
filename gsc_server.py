@@ -556,7 +556,7 @@ async def get_sitemaps(site_url: Optional[str] = None) -> str:
         return f"Error retrieving sitemaps: {str(e)}"
 
 @mcp.tool()
-async def inspect_url_enhanced(site_url: Optional[str] = None, page_url: str) -> str:
+async def inspect_url_enhanced(page_url: str, site_url: Optional[str] = None) -> str:
     """
     Enhanced URL inspection to check indexing status and rich results in Google.
     
@@ -681,7 +681,7 @@ async def inspect_url_enhanced(site_url: Optional[str] = None, page_url: str) ->
         return f"Error inspecting URL: {str(e)}"
 
 @mcp.tool()
-async def batch_url_inspection(site_url: Optional[str] = None, urls: str) -> str:
+async def batch_url_inspection(urls: str, site_url: Optional[str] = None) -> str:
     """
     Inspect multiple URLs in batch (within API limits).
     
@@ -760,7 +760,7 @@ async def batch_url_inspection(site_url: Optional[str] = None, urls: str) -> str
         return f"Error performing batch inspection: {str(e)}"
 
 @mcp.tool()
-async def check_indexing_issues(site_url: Optional[str] = None, urls: str) -> str:
+async def check_indexing_issues(urls: str, site_url: Optional[str] = None) -> str:
     """
     Check for specific indexing issues across multiple URLs.
     
@@ -974,20 +974,20 @@ async def get_performance_overview(site_url: Optional[str] = None, days: int = 2
 
 @mcp.tool()
 async def get_advanced_search_analytics(
-    site_url: Optional[str] = None, 
-    start_date: str = None, 
-    end_date: str = None, 
-    dimensions: str = "query", 
+    start_date: str = None,
+    end_date: str = None,
+    dimensions: str = "query",
     search_type: str = "WEB",
     row_limit: int = 1000,
     start_row: int = 0,
     sort_by: str = "clicks",
     sort_direction: str = "descending",
     filter_dimension: str = None,
-    filter_operator: str = "contains", 
+    filter_operator: str = "contains",
     filter_expression: str = None,
     filters: str = None,
-    data_state: str = None
+    data_state: str = None,
+    site_url: Optional[str] = None,
 ) -> str:
     """
     Get advanced search analytics data with sorting, filtering, and pagination.
@@ -1158,13 +1158,13 @@ async def get_advanced_search_analytics(
 
 @mcp.tool()
 async def compare_search_periods(
-    site_url: Optional[str] = None,
     period1_start: str,
     period1_end: str,
     period2_start: str,
     period2_end: str,
     dimensions: str = "query",
-    limit: int = 10
+    limit: int = 10,
+    site_url: Optional[str] = None,
 ) -> str:
     """
     Compare search analytics data between two time periods.
@@ -1298,10 +1298,10 @@ async def compare_search_periods(
 
 @mcp.tool()
 async def get_search_by_page_query(
-    site_url: Optional[str] = None,
     page_url: str,
     days: int = 28,
-    row_limit: int = 20
+    row_limit: int = 20,
+    site_url: Optional[str] = None,
 ) -> str:
     """
     Get search analytics data for a specific page, broken down by query.
@@ -1465,7 +1465,7 @@ async def list_sitemaps_enhanced(site_url: Optional[str] = None, sitemap_index: 
         return f"Error retrieving sitemaps: {str(e)}"
 
 @mcp.tool()
-async def get_sitemap_details(site_url: Optional[str] = None, sitemap_url: str) -> str:
+async def get_sitemap_details(sitemap_url: str, site_url: Optional[str] = None) -> str:
     """
     Get detailed information about a specific sitemap.
     
@@ -1538,7 +1538,7 @@ async def get_sitemap_details(site_url: Optional[str] = None, sitemap_url: str) 
         return f"Error retrieving sitemap details: {str(e)}"
 
 @mcp.tool()
-async def submit_sitemap(site_url: Optional[str] = None, sitemap_url: str) -> str:
+async def submit_sitemap(sitemap_url: str, site_url: Optional[str] = None) -> str:
     """
     Submit a new sitemap or resubmit an existing one to Google.
     
@@ -1588,7 +1588,7 @@ async def submit_sitemap(site_url: Optional[str] = None, sitemap_url: str) -> st
         return f"Error submitting sitemap: {str(e)}"
 
 @mcp.tool()
-async def delete_sitemap(site_url: Optional[str] = None, sitemap_url: str) -> str:
+async def delete_sitemap(sitemap_url: str, site_url: Optional[str] = None) -> str:
     """
     Delete (unsubmit) a sitemap from Google Search Console.
     
@@ -1627,7 +1627,7 @@ async def delete_sitemap(site_url: Optional[str] = None, sitemap_url: str) -> st
         return f"Error deleting sitemap: {str(e)}"
 
 @mcp.tool()
-async def manage_sitemaps(site_url: Optional[str] = None, action: str, sitemap_url: str = None, sitemap_index: str = None) -> str:
+async def manage_sitemaps(action: str, sitemap_url: str = None, sitemap_index: str = None, site_url: Optional[str] = None) -> str:
     """
     All-in-one tool to manage sitemaps (list, get details, submit, delete).
     
@@ -1657,11 +1657,11 @@ async def manage_sitemaps(site_url: Optional[str] = None, action: str, sitemap_u
         if action == "list":
             return await list_sitemaps_enhanced(site_url, sitemap_index)
         elif action == "details":
-            return await get_sitemap_details(site_url, sitemap_url)
+            return await get_sitemap_details(sitemap_url=sitemap_url, site_url=site_url)
         elif action == "submit":
-            return await submit_sitemap(site_url, sitemap_url)
+            return await submit_sitemap(sitemap_url=sitemap_url, site_url=site_url)
         elif action == "delete":
-            return await delete_sitemap(site_url, sitemap_url)
+            return await delete_sitemap(sitemap_url=sitemap_url, site_url=site_url)
     
     except Exception as e:
         return f"Error managing sitemaps: {str(e)}"
